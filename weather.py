@@ -64,6 +64,10 @@ class Weather:
         plus_3 = forecast.get_weather_at(self.__datetime_day_granuality(datetime.utcnow() + timedelta(days=3)))
         self.temp_max_day_plus_3 = plus_3.temperature('celsius')['max']
 
+        logging.info("sunrise:         " + self.sunrise_time.strftime("%H:%M"))
+        logging.info("sunset:          " + self.sunset_time.strftime("%H:%M"))
+        logging.info("max temp today:  " + str(self.temp_max_day_plus_0))
+
         self.__listener()
 
 
