@@ -2,19 +2,16 @@ import logging
 from threading import Thread
 from time import sleep
 from datetime import datetime, timedelta
-from pyowm import OWM
+import requests
 
 
 
 class Weather:
 
-    def __init__(self, key: str, location: str):
+    def __init__(self, station_id: str):
         self.__is_running = True
         self.__listener = lambda: None    # "empty" listener
-        self.__location = location
-        lat, lon = self.__location.split(",")
-        self.lat = float(lat.strip())
-        self.lon = float(lon.strip())
+        self.station_id = station_id
 
         self.sunrise_time = None
         self.sunset_time = None
@@ -22,8 +19,11 @@ class Weather:
         self.temp_max_day_plus_1 = 0
         self.temp_max_day_plus_2 = 0
         self.temp_max_day_plus_3 = 0
+        self.temp_min_day_plus_0 = 0
+        self.temp_min_day_plus_1 = 0
+        self.temp_min_day_plus_2 = 0
+        self.temp_min_day_plus_3 = 0
 
-        self.__mgr = OWM(key).weather_manager()
         self.__sync()
 
     def set_listener(self,listener):
@@ -50,19 +50,25 @@ class Weather:
 
 
     def __sync(self):
-        today = self.__mgr.weather_at_coords(self.lat, self.lon)
-        self.temp_max_day_plus_0 = today.weather.temperature('celsius')['temp_max']
-
-        self.sunset_time = datetime.fromtimestamp(today.weather.sunset_time())
-        self.sunrise_time = datetime.fromtimestamp(today.weather.sunrise_time())
-
-        forecast = self.__mgr.forecast_at_coords(self.lat, self.lon, 'daily')
-        plus_1 = forecast.get_weather_at(self.__datetime_day_granuality(datetime.utcnow() + timedelta(days=1)))
-        self.temp_max_day_plus_1 = plus_1.temperature('celsius')['max']
-        plus_2 = forecast.get_weather_at(self.__datetime_day_granuality(datetime.utcnow() + timedelta(days=2)))
-        self.temp_max_day_plus_2 = plus_2.temperature('celsius')['max']
-        plus_3 = forecast.get_weather_at(self.__datetime_day_granuality(datetime.utcnow() + timedelta(days=3)))
-        self.temp_max_day_plus_3 = plus_3.temperature('celsius')['max']
+        today = datetime.now()
+        resp = requests.get("https://app-prod-ws.warnwetter.de/v30/stationOverviewExtended?stationIds=" + self.station_id)
+        resp.raise_for_status()
+        data = resp.json()[self.station_id]
+        for day in data['days']:
+            if day['dayDate'] == today.strftime("%Y-%m-%d"):
+                self.temp_max_day_plus_0 = day['temperatureMax'] / 10
+                self.temp_min_day_plus_0 = day['temperatureMin'] / 10
+                self.sunset_time = datetime.fromtimestamp(int(day['sunset']/1000))
+                self.sunrise_time = datetime.fromtimestamp(int(day['sunrise']/1000))
+            elif day['dayDate'] == (today + timedelta(days=1)).strftime("%Y-%m-%d"):
+                self.temp_max_day_plus_1 = day['temperatureMax'] / 10
+                self.temp_min_day_plus_1 = day['temperatureMin'] / 10
+            elif day['dayDate'] == (today + timedelta(days=2)).strftime("%Y-%m-%d"):
+                self.temp_max_day_plus_2 = day['temperatureMax'] / 10
+                self.temp_min_day_plus_2 = day['temperatureMin'] / 10
+            elif day['dayDate'] == (today + timedelta(days=3)).strftime("%Y-%m-%d"):
+                self.temp_max_day_plus_3 = day['temperatureMax'] / 10
+                self.temp_min_day_plus_3 = day['temperatureMin'] / 10
 
         logging.info("sunrise:         " + self.sunrise_time.strftime("%H:%M"))
         logging.info("sunset:          " + self.sunset_time.strftime("%H:%M"))
