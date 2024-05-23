@@ -124,24 +124,24 @@ class WeatherThing(Thing):
         self.sunrise_time= Value(weather.sunrise_time.strftime("%Y-%m-%dT%H:%M"))
         self.add_property(
             Property(self,
-                     'sunrise_time',
+                     'sunrise_time_utc',
                      self.sunrise_time,
                      metadata={
-                         'title': 'sunrise_time',
+                         'title': 'sunrise_time_utc',
                          "type": "string",
-                         'description': 'the sunrise time as ISO8602 string',
+                         'description': 'the sunrise time as ISO8602 string (utc)',
                          'readOnly': True,
                      }))
 
         self.sunset_time = Value(weather.sunset_time.strftime("%Y-%m-%dT%H:%M"))
         self.add_property(
             Property(self,
-                     'sunset_time',
+                     'sunset_time_utc',
                      self.sunset_time,
                      metadata={
-                         'title': 'sunset_time',
+                         'title': 'sunset_time_utc',
                          "type": "string",
-                         'description': 'the sunset time as ISO8602 string',
+                         'description': 'the sunset time as ISO8602 string (utc)',
                          'readOnly': True,
                      }))
 
